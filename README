@@ -4,9 +4,11 @@ This is a function secret sharing (FSS) library for Go based the following paper
 
 - Boyle, Elette, Niv Gilboa, and Yuval Ishai. "Function secret sharing." Annual International Conference on the Theory and Applications of Cryptographic Techniques. Springer Berlin Heidelberg, 2015. 
 
-This implementation is an updated Go version described in 
+This implementation uses the techniques described in: 
 
 Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zaharia. "Splinter: Practical Private Queries on Public Data." NSDI 2017.
+
+We created a Go library for portability reasons.
 
 For any questions, feel free to create an issue, submit a pull request, or email Frank Wang at frankw at mit dot edu.
 
