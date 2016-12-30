@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 )
 
 type Fss struct {
@@ -36,12 +37,15 @@ func ClientInitialize(numBits uint) *Fss {
 	for i := 0; i < initPRFLen; i++ {
 		f.PrfKeys[i] = make([]byte, aes.BlockSize)
 		rand.Read(f.PrfKeys[i])
+		//fmt.Println("client")
+		//fmt.Println(f.PrfKeys[i])
 		block, err := aes.NewCipher(f.PrfKeys[i])
 		if err != nil {
 			panic(err.Error())
 		}
 		f.FixedBlocks[i] = block
 	}
+	// Check if int is 32 or 64 bit
 	var x uint64 = 1 << 32
 	if uint(x) == 0 {
 		f.N = 32
@@ -64,12 +68,15 @@ func ServerInitialize(prfKeys [][]byte, numBits uint) *Fss {
 	for i := range prfKeys {
 		f.PrfKeys[i] = make([]byte, aes.BlockSize)
 		copy(f.PrfKeys[i], prfKeys[i])
+		//fmt.Println("server")
+		//fmt.Println(f.PrfKeys[i])
 		block, err := aes.NewCipher(f.PrfKeys[i])
 		if err != nil {
 			panic(err.Error())
 		}
 		f.FixedBlocks[i] = block
 	}
+	// Check if int is 32 or 64 bit
 	var x uint64 = 1 << 32
 	if uint(x) == 0 {
 		f.N = 32
@@ -83,7 +90,7 @@ func ServerInitialize(prfKeys [][]byte, numBits uint) *Fss {
 }
 
 // Generate Keys for point functions
-func (f Fss) GenerateTreePF(a uint, b uint) []FssKey {
+func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 	fssKeys := make([]FssKey, 2)
 	// Set up initial values
 	tempRand1 := make([]byte, aes.BlockSize+1)
@@ -95,8 +102,10 @@ func (f Fss) GenerateTreePF(a uint, b uint) []FssKey {
 	fssKeys[1].TInit = (fssKeys[0].TInit + 1) % 2
 
 	// Set current seed being used
-	sCurr0 := fssKeys[0].SInit
-	sCurr1 := fssKeys[1].SInit
+	sCurr0 := make([]byte, aes.BlockSize)
+	sCurr1 := make([]byte, aes.BlockSize)
+	copy(sCurr0, fssKeys[0].SInit)
+	copy(sCurr1, fssKeys[1].SInit)
 	tCurr0 := fssKeys[0].TInit
 	tCurr1 := fssKeys[1].TInit
 
@@ -120,6 +129,9 @@ func (f Fss) GenerateTreePF(a uint, b uint) []FssKey {
 		prfOut1 := make([]byte, aes.BlockSize*3)
 		copy(prfOut1, f.Out[:aes.BlockSize*3])
 
+		fmt.Println(i)
+		//fmt.Println(prfOut0)
+		//fmt.Println(prfOut1)
 		// Parse out "t" bits
 		t0Left := prfOut0[aes.BlockSize] % 2
 		t0Right := prfOut0[(aes.BlockSize*2)+1] % 2
@@ -153,8 +165,8 @@ func (f Fss) GenerateTreePF(a uint, b uint) []FssKey {
 		if keep == rightStart {
 			tCWKeep = fssKeys[0].CW[i][aes.BlockSize+1]
 		}
-		tCurr0 = (prfOut0[keep+aes.BlockSize] % 2) ^ (tCWKeep * tCurr0)
-		tCurr1 = (prfOut1[keep+aes.BlockSize] % 2) ^ (tCWKeep * tCurr1)
+		tCurr0 = (prfOut0[keep+aes.BlockSize] % 2) ^ tCWKeep*tCurr0
+		tCurr1 = (prfOut1[keep+aes.BlockSize] % 2) ^ tCWKeep*tCurr1
 	}
 	// Convert final CW to integer
 	sFinal0, _ := binary.Varint(sCurr0[:8])
@@ -169,6 +181,8 @@ func (f Fss) EvaluatePF(b byte, k FssKey, x uint) int {
 	tCurr := k.TInit
 	for i := uint(0); i < f.NumBits; i++ {
 		prf(sCurr, f.FixedBlocks, 3, f.Temp, f.Out)
+		fmt.Println(i)
+		//fmt.Println(f.Out)
 		for j := 0; j < aes.BlockSize+2; j++ {
 			f.Out[j] = f.Out[j] ^ (tCurr * k.CW[i][j])
 		}
@@ -176,10 +190,10 @@ func (f Fss) EvaluatePF(b byte, k FssKey, x uint) int {
 		// Pick right seed expansion based on
 		if xBit == 0 {
 			sCurr = f.Out[:aes.BlockSize]
-			tCurr = f.Out[aes.BlockSize]
+			tCurr = f.Out[aes.BlockSize] % 2
 		} else {
 			sCurr = f.Out[(aes.BlockSize + 1):(aes.BlockSize*2 + 1)]
-			tCurr = f.Out[aes.BlockSize*2+1]
+			tCurr = f.Out[aes.BlockSize*2+1] % 2
 		}
 	}
 	sFinal, _ := binary.Varint(sCurr[:8])
