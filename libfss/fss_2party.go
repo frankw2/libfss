@@ -27,7 +27,8 @@ type FssKey struct {
 const initPRFLen int = 4
 
 // initialize client with this function
-func (f Fss) ClientInitialize(numBits uint) {
+func ClientInitialize(numBits uint) *Fss {
+	f := new(Fss)
 	f.NumBits = numBits
 	f.PrfKeys = make([][]byte, initPRFLen)
 	// Create fixed AES blocks
@@ -48,16 +49,21 @@ func (f Fss) ClientInitialize(numBits uint) {
 		f.N = 64
 	}
 	f.Temp = make([]byte, aes.BlockSize)
-	f.Out = make([]byte, aes.BlockSize*4)
+	f.Out = make([]byte, aes.BlockSize*initPRFLen)
+	return f
 }
 
 // upon receiving query from server, initialize server with
 // this function. The server, unlike the client
 // receives prfKeys, so it doesn't need to pick random ones
-func (f Fss) ServerInitialize(prfKeys [][]byte, numBits uint) {
+func ServerInitialize(prfKeys [][]byte, numBits uint) *Fss {
+	f := new(Fss)
 	f.NumBits = numBits
+	f.PrfKeys = make([][]byte, initPRFLen)
+	f.FixedBlocks = make([]cipher.Block, initPRFLen)
 	for i := range prfKeys {
-		f.PrfKeys[i] = prfKeys[i]
+		f.PrfKeys[i] = make([]byte, aes.BlockSize)
+		copy(f.PrfKeys[i], prfKeys[i])
 		block, err := aes.NewCipher(f.PrfKeys[i])
 		if err != nil {
 			panic(err.Error())
@@ -70,6 +76,10 @@ func (f Fss) ServerInitialize(prfKeys [][]byte, numBits uint) {
 	} else {
 		f.N = 64
 	}
+	f.Temp = make([]byte, aes.BlockSize)
+	f.Out = make([]byte, aes.BlockSize*initPRFLen)
+
+	return f
 }
 
 // Generate Keys for point functions
