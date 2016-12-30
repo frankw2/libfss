@@ -8,8 +8,8 @@ import (
 // 0th position is the most significant bit
 // True if bit is 1 and False if bit is 0
 // N is the number of bits in uint
-func getBit(n uint, pos uint, N uint) byte {
-	val := (n & (1 << (uint(N) - pos)))
+func getBit(n, pos, N uint) byte {
+	val := (n & (1 << (N - pos)))
 	if val > 0 {
 		return 1
 	} else {
@@ -19,7 +19,7 @@ func getBit(n uint, pos uint, N uint) byte {
 
 // fixed key PRF (Matyas–Meyer–Oseas one way compression function)
 // numBlocks represents the number
-func prf(x []byte, aesBlocks []cipher.Block, numBlocks uint, temp []byte, out []byte) {
+func prf(x []byte, aesBlocks []cipher.Block, numBlocks uint, temp, out []byte) {
 	for i := uint(0); i < numBlocks; i++ {
 		// get AES_k[i](x)
 		aesBlocks[i].Encrypt(temp, x)

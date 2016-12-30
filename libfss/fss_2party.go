@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
+	//"fmt"
 )
 
 type Fss struct {
@@ -99,7 +99,7 @@ func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 	fssKeys[0].TInit = tempRand1[aes.BlockSize] % 2
 	fssKeys[1].SInit = make([]byte, aes.BlockSize)
 	rand.Read(fssKeys[1].SInit)
-	fssKeys[1].TInit = (fssKeys[0].TInit + 1) % 2
+	fssKeys[1].TInit = fssKeys[0].TInit ^ 1
 
 	// Set current seed being used
 	sCurr0 := make([]byte, aes.BlockSize)
@@ -129,24 +129,25 @@ func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 		prfOut1 := make([]byte, aes.BlockSize*3)
 		copy(prfOut1, f.Out[:aes.BlockSize*3])
 
-		fmt.Println(i)
-		//fmt.Println(prfOut0)
-		//fmt.Println(prfOut1)
+		//fmt.Println(i, sCurr0)
+		//fmt.Println(i, sCurr1)
 		// Parse out "t" bits
 		t0Left := prfOut0[aes.BlockSize] % 2
 		t0Right := prfOut0[(aes.BlockSize*2)+1] % 2
 		t1Left := prfOut1[aes.BlockSize] % 2
 		t1Right := prfOut1[(aes.BlockSize*2)+1] % 2
 		// Find bit in a
-		aBit := getBit(a, i, f.N)
+		aBit := getBit(a, (f.N - f.NumBits + i + 1), f.N)
 
 		// Figure out which half of expanded seeds to keep and lose
 		keep := rightStart
 		lose := leftStart
-		if a == 0 {
+		if aBit == 0 {
 			keep = leftStart
 			lose = rightStart
 		}
+		//fmt.Println("keep", keep)
+		//fmt.Println("aBit", aBit)
 		// Set correction words for both keys. Note: they are the same
 		for j := 0; j < aes.BlockSize; j++ {
 			fssKeys[0].CW[i][j] = prfOut0[lose+j] ^ prfOut1[lose+j]
@@ -161,6 +162,8 @@ func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 			sCurr0[j] = prfOut0[keep+j] ^ (tCurr0 * fssKeys[0].CW[i][j])
 			sCurr1[j] = prfOut1[keep+j] ^ (tCurr1 * fssKeys[0].CW[i][j])
 		}
+		//fmt.Println("sKeep0:", prfOut0[keep:keep+aes.BlockSize])
+		//fmt.Println("sKeep1:", prfOut1[keep:keep+aes.BlockSize])
 		tCWKeep := fssKeys[0].CW[i][aes.BlockSize]
 		if keep == rightStart {
 			tCWKeep = fssKeys[0].CW[i][aes.BlockSize+1]
@@ -177,24 +180,36 @@ func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 }
 
 func (f Fss) EvaluatePF(b byte, k FssKey, x uint) int {
-	sCurr := k.SInit
+	sCurr := make([]byte, aes.BlockSize)
+	copy(sCurr, k.SInit)
 	tCurr := k.TInit
 	for i := uint(0); i < f.NumBits; i++ {
 		prf(sCurr, f.FixedBlocks, 3, f.Temp, f.Out)
-		fmt.Println(i)
-		//fmt.Println(f.Out)
-		for j := 0; j < aes.BlockSize+2; j++ {
-			f.Out[j] = f.Out[j] ^ (tCurr * k.CW[i][j])
+		//fmt.Println(i, sCurr)
+		//fmt.Println(i, "f.Out:", f.Out)
+		// Keep counter to ensure we are accessing CW correctly
+		count := 0
+		for j := 0; j < aes.BlockSize*2+2; j++ {
+			// Make sure we are doing G(s) ^ (t*sCW||tLCW||sCW||tRCW)
+			if j == aes.BlockSize+1 {
+				count = 0
+			} else if j == aes.BlockSize*2+1 {
+				count = aes.BlockSize + 1
+			}
+			f.Out[j] = f.Out[j] ^ (tCurr * k.CW[i][count])
+			count++
 		}
-		xBit := getBit(x, i, f.N)
+		xBit := getBit(x, (f.N - f.NumBits + i + 1), f.N)
+		//fmt.Println("xBit", xBit)
 		// Pick right seed expansion based on
 		if xBit == 0 {
-			sCurr = f.Out[:aes.BlockSize]
+			copy(sCurr, f.Out[:aes.BlockSize])
 			tCurr = f.Out[aes.BlockSize] % 2
 		} else {
-			sCurr = f.Out[(aes.BlockSize + 1):(aes.BlockSize*2 + 1)]
+			copy(sCurr, f.Out[(aes.BlockSize+1):(aes.BlockSize*2+1)])
 			tCurr = f.Out[aes.BlockSize*2+1] % 2
 		}
+		//fmt.Println(f.Out)
 	}
 	sFinal, _ := binary.Varint(sCurr[:8])
 	if b == 0 {
