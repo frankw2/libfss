@@ -8,7 +8,7 @@ This implementation uses the techniques described in:
 
 Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zaharia. "Splinter: Practical Private Queries on Public Data." NSDI 2017.
 
-We created a Go library for portability reasons.
+We created a Go library for portability reasons. The main FSS files are in libfss/. Doing a go install on the test/ folder will create the test programs. 
 
 For any questions, feel free to create an issue, submit a pull request, or email Frank Wang at frankw at mit dot edu.
 
