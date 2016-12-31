@@ -28,6 +28,8 @@ type FssKey struct {
 const initPRFLen int = 4
 
 // initialize client with this function
+// numBits represents the input domain for the function, i.e. the number
+// of bits to check
 func ClientInitialize(numBits uint) *Fss {
 	f := new(Fss)
 	f.NumBits = numBits
@@ -174,12 +176,16 @@ func (f Fss) GenerateTreePF(a, b uint) []FssKey {
 	// Convert final CW to integer
 	sFinal0, _ := binary.Varint(sCurr0[:8])
 	sFinal1, _ := binary.Varint(sCurr1[:8])
-	fssKeys[0].FinalCW = int(b) - int(sFinal0) + int(sFinal1)
-	fssKeys[1].FinalCW = -1 * fssKeys[0].FinalCW
+	fssKeys[0].FinalCW = (int(b) - int(sFinal0) + int(sFinal1))
+	fssKeys[1].FinalCW = fssKeys[0].FinalCW
+	if tCurr1 == 1 {
+		fssKeys[0].FinalCW = fssKeys[0].FinalCW * -1
+		fssKeys[1].FinalCW = fssKeys[0].FinalCW
+	}
 	return fssKeys
 }
 
-func (f Fss) EvaluatePF(b byte, k FssKey, x uint) int {
+func (f Fss) EvaluatePF(serverNum byte, k FssKey, x uint) int {
 	sCurr := make([]byte, aes.BlockSize)
 	copy(sCurr, k.SInit)
 	tCurr := k.TInit
@@ -212,7 +218,7 @@ func (f Fss) EvaluatePF(b byte, k FssKey, x uint) int {
 		//fmt.Println(f.Out)
 	}
 	sFinal, _ := binary.Varint(sCurr[:8])
-	if b == 0 {
+	if serverNum == 0 {
 		return int(sFinal) + int(tCurr)*k.FinalCW
 	} else {
 		return -1 * (int(sFinal) + int(tCurr)*k.FinalCW)
