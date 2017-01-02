@@ -10,5 +10,5 @@ Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zah
 
 We created a Go library for portability reasons. The main FSS files are in libfss/. Doing a go install on the test/ folder will create the test programs. 
 
-For any questions, feel free to create an issue, submit a pull request, or email Frank Wang at frankw at mit dot edu.
+For any questions, feel free to create an issue, submit a pull request, or email Frank Wang at frankw@mit.edu.
 
