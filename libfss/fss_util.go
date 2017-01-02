@@ -5,6 +5,18 @@ import (
 	"crypto/cipher"
 )
 
+type Fss struct {
+	// store keys used in fixedBlocks so that they can be sent to the server
+	PrfKeys     [][]byte
+	FixedBlocks []cipher.Block
+	N           uint
+	NumBits     uint   // number of bits in domain
+	Temp        []byte // temporary slices so that we only need to allocate memory at the beginning
+	Out         []byte
+}
+
+const initPRFLen int = 4
+
 // 0th position is the most significant bit
 // True if bit is 1 and False if bit is 0
 // N is the number of bits in uint

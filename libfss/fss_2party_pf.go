@@ -13,24 +13,12 @@ import (
 	//"fmt"
 )
 
-type Fss struct {
-	// store keys used in fixedBlocks so that they can be sent to the server
-	PrfKeys     [][]byte
-	FixedBlocks []cipher.Block
-	N           uint
-	NumBits     uint   // number of bits in domain
-	Temp        []byte // temporary slices so that we only need to allocate memory at the beginning
-	Out         []byte
-}
-
 type FssKeyEq2P struct {
 	SInit   []byte
 	TInit   byte
 	CW      [][]byte // there are n
 	FinalCW int
 }
-
-const initPRFLen int = 4
 
 // initialize client with this function
 // numBits represents the input domain for the function, i.e. the number

@@ -3,6 +3,7 @@ package libfss
 import (
 	"crypto/aes"
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"time"
 )
@@ -42,8 +43,8 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	// The second AES_SIZE bits are for the 1 bit
 	s0 := make([]byte, aes.BlockSize*2)
 	s1 := make([]byte, aes.BlockSize*2)
-	aStart := int(AES_SIZE * aBit)
-	naStart := int(AES_SIZE * naBit)
+	aStart := int(aes.BlockSize * aBit)
+	naStart := int(aes.BlockSize * naBit)
 
 	rand.Read(s0[aStart : aStart+aes.BlockSize])
 	rand.Read(s1[aStart : aStart+aes.BlockSize])
@@ -103,23 +104,13 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	key0, key1 := s0[aStart:aStart+aes.BlockSize], s1[aStart:aStart+aes.BlockSize]
 	tbit0, tbit1 := t0[aBit], t1[aBit]
 
-	s0 = make([]byte, aes.BlockSize*2)
-	s1 = make([]byte, aes.BlockSize*2)
-	temp0 := make([]byte, aes.BlockSize)
-	temp1 := make([]byte, aes.BlockSize)
-	t0 = make([]uint8, 2)
-	t1 = make([]uint8, 2)
-
-	// Byte arrays for random Vs
-	vall0 := make([]byte, aes.BlockSize)
-	vall1 := make([]byte, aes.BlockSize)
-
 	cs0 := make([]byte, aes.BlockSize*2)
 	cs1 := make([]byte, aes.BlockSize*2)
 	ct0 := make([]uint8, 2)
 	ct1 := make([]uint8, 2)
 
-	var cv [2][]uint
+	var cv [][]uint
+	cv = make([][]uint, 2)
 	cv[0] = make([]uint, 2)
 	cv[1] = make([]uint, 2)
 
@@ -128,79 +119,48 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		aBit = getBit(a, (f.N - f.NumBits + i + 2), f.N)
 		naBit = aBit ^ 1
 
-		// TODO: START FIXING HERE!!!!
+		prf(key0, f.FixedBlocks, 4, f.Temp, f.Out)
+		copy(s0, f.Out[:aes.BlockSize*2])
+		t0[0] = f.Out[aes.BlockSize*2] % 2
+		t0[1] = f.Out[aes.BlockSize*2+1] % 2
+		v0[0], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16]))
+		v0[1], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24]))
 
-		// Implement AES CTR because the library is too slow
-		block0.Encrypt(s0[0:AES_SIZE], pt0)
-		block0.Encrypt(s0[AES_SIZE:AES_SIZE*2], pt1)
-		block0.Encrypt(temp0, pt2)
-		block0.Encrypt(vall0, pt3)
-
-		block1.Encrypt(s1[0:AES_SIZE], pt0)
-		block1.Encrypt(s1[AES_SIZE:AES_SIZE*2], pt1)
-		block1.Encrypt(temp1, pt2)
-		block1.Encrypt(vall1, pt3)
-
-		for j := 0; j < AES_SIZE; j++ {
-			s0[j] = s0[j] ^ pt0[j]
-			s0[AES_SIZE+j] = s0[AES_SIZE+j] ^ pt1[j]
-			temp0[j] = temp0[j] ^ pt2[j]
-			vall0[j] = vall0[j] ^ pt3[j]
-			s1[j] = s1[j] ^ pt0[j]
-			s1[AES_SIZE+j] = s1[AES_SIZE+j] ^ pt1[j]
-			temp1[j] = temp1[j] ^ pt2[j]
-			vall1[j] = vall1[j] ^ pt3[j]
-		}
-		t0[0] = uint8(temp0[0]) % 2
-		t0[1] = uint8(temp0[1]) % 2
-		t1[0] = uint8(temp1[0]) % 2
-		t1[1] = uint8(temp1[1]) % 2
-
-		v0[0] = new(big.Int).SetBytes(vall0[0 : N/8])
-		v0[1] = new(big.Int).SetBytes(vall0[N/8 : N/4])
-		v1[0] = new(big.Int).SetBytes(vall1[0 : N/8])
-		v1[1] = new(big.Int).SetBytes(vall1[N/8 : N/4])
+		prf(key1, f.FixedBlocks, 4, f.Temp, f.Out)
+		copy(s1, f.Out[:aes.BlockSize*2])
+		t1[0] = f.Out[aes.BlockSize*2] % 2
+		t1[1] = f.Out[aes.BlockSize*2+1] % 2
+		v1[0], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16]))
+		v1[1], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24]))
 
 		// Redefine aStart and naStart based on new a's
-		aStart = int(AES_SIZE * a)
-		naStart = int(AES_SIZE * na)
+		aStart = int(aes.BlockSize * aBit)
+		naStart = int(aes.BlockSize * naBit)
 
 		// Create cs and ct for next bit
-		_, err = rand.Read(cs0[aStart : aStart+AES_SIZE])
-		if err != nil {
-			panic(err)
-		}
-		_, err = rand.Read(cs1[aStart : aStart+AES_SIZE])
-		if err != nil {
-			panic(err)
-		}
+		rand.Read(cs0[aStart : aStart+aes.BlockSize])
+		rand.Read(cs1[aStart : aStart+aes.BlockSize])
 
 		// Pick random cs0na and pick cs1na s.t.
 		// cs0na xor cs1na xor s0na xor s1na = 0
-		_, err = rand.Read(cs0[naStart : naStart+AES_SIZE])
-		if err != nil {
-			panic(err)
-		}
+		rand.Read(cs0[naStart : naStart+aes.BlockSize])
 
-		for j := 0; j < AES_SIZE; j++ {
+		for j := 0; j < aes.BlockSize; j++ {
 			cs1[naStart+j] = s0[naStart+j] ^ s1[naStart+j] ^ cs0[naStart+j]
 		}
 
-		_, err = rand.Read(temp)
-		if err != nil {
-			panic(err)
-		}
+		rand.Read(temp)
 		// Set ct0a and ct1a s.t.
 		// ct0a xor ct1a xor t0a xor t1a = 1
-		ct0[a] = uint8(temp[0]) % 2
-		ct1[a] = ct0[a] ^ t0[a] ^ t1[a] ^ 1
+		ct0[aBit] = uint8(temp[0]) % 2
+		ct1[aBit] = ct0[aBit] ^ t0[aBit] ^ t1[aBit] ^ 1
 
 		// Set ct0na and ct1na s.t.
 		// ct0na xor ct1na xor t0na xor t1na = 0
-		ct0[na] = uint8(temp[1]) % 2
-		ct1[na] = ct0[na] ^ t0[na] ^ t1[na]
+		ct0[naBit] = uint8(temp[1]) % 2
+		ct1[naBit] = ct0[naBit] ^ t0[naBit] ^ t1[naBit]
 
-		cv[tbit0][a], err = rand.Int(rand.Reader, prime)
+		cv[tbit0][a], err = uint(rand.Int())
 		if err != nil {
 			panic(err)
 		}
