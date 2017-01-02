@@ -1,11 +1,13 @@
 package libfss
 
+// This file contains the 2-party FSS for interval functions, i.e. <, > functions.
+// The usage is similar to 2-party FSS for equality functions.
+
 import (
 	"crypto/aes"
 	"crypto/rand"
 	"encoding/binary"
-	"fmt"
-	"time"
+	//"fmt"
 )
 
 type CWLt struct {
@@ -21,6 +23,7 @@ type ServerKeyLt struct {
 	cw [][]CWLt // Should be length n
 }
 
+// Generate the function shares for a function that evaluates to b when input x < a.
 func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	k := make([]ServerKeyLt, 2)
 
@@ -64,10 +67,8 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	t0 := make([]uint8, 2)
 	t1 := make([]uint8, 2)
 	temp := make([]byte, 2)
-	_, err = rand.Read(temp)
-	if err != nil {
-		panic(err)
-	}
+	rand.Read(temp)
+
 	// Make sure t0a and t1a are different
 	t0[aBit] = uint8(temp[0]) % 2
 	t1[aBit] = (t0[aBit] + 1) % 2
@@ -81,17 +82,11 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	v1 := make([]uint, 2)
 
 	// make sure v0a + -v1a = 0
-	v0[aBit], err = uint(rand.Int())
-	if err != nil {
-		panic(err)
-	}
+	v0[aBit], _ = uint(rand.Int())
 	v1[aBit] = -v0[aBit]
 
 	// make sure v0na + -v1na = a1 * b
-	v0[naBit], err = uint(rand.Int())
-	if err != nil {
-		panic(err)
-	}
+	v0[naBit], _ = uint(rand.Int())
 	v1[naBit] = v0[naBit] - b*uint(aBit)
 
 	// Store generated values into the key
@@ -268,7 +263,8 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 
 func (Fss f) evaluateLt(k ServerKeyLt, x uint) uint {
 	xBit := getBit(x, (f.N - f.numBits + 1))
-	s := k.s[xBit]
+	s := make([]byte, aes.BlockSize)
+	copy(s, k.s[xBit])
 	t := k.t[xBit]
 	v := k.v[xBit]
 
@@ -276,33 +272,16 @@ func (Fss f) evaluateLt(k ServerKeyLt, x uint) uint {
 		// Get current bit
 		xBit = getBit(x, uint(f.N-f.NumBits+i+1))
 
-		// TODO: start fixing here!!!!
-		block, err := aes.NewCipher(s)
-		if err != nil {
-			panic(err)
-		}
+		prf(s, f.FixedBlocks, 4, f.Temp, f.Out)
 
-		block.Encrypt(sArray[0:AES_SIZE], pt0)
-		block.Encrypt(sArray[AES_SIZE:AES_SIZE*2], pt1)
-		block.Encrypt(temp, pt2)
-		block.Encrypt(vByte, pt3)
-
-		for j := 0; j < AES_SIZE; j++ {
-			sArray[j] = sArray[j] ^ pt0[j]
-			sArray[AES_SIZE+j] = sArray[AES_SIZE+j] ^ pt1[j]
-			temp[j] = temp[j] ^ pt2[j]
-			vByte[j] = vByte[j] ^ pt3[j]
-		}
 		// Pick the right values to use based on bit of x
-		xStart := int(AES_SIZE * xi)
-		s = sArray[xStart : xStart+AES_SIZE]
-		for j := 0; j < AES_SIZE; j++ {
-			s[j] = s[j] ^ k.cw[t][i-1].cs[xi][j]
+		xStart := int(aes.BlockSize * xi)
+		copy(s, f.Out[xStart:xStart+aes.BlockSize])
+		for j := 0; j < aes.BlockSize; j++ {
+			s[j] = s[j] ^ k.cw[t][i-1].cs[xBit][j]
 		}
-		vStart := int(N / 8 * xi)
-		v.Add(v, new(big.Int).SetBytes(vByte[vStart:vStart+N/8]))
-		v.Add(v, k.cw[t][i-1].cv[xi])
-		v.Mod(v, prime)
+		vStart := aes.BlockSize*2 + 8 + 8*xBit
+		v = v + uint(binary.Uvarint(f.Out[vStart:vStart+8])) + k.cw[t][i-1].cv[xBit]
 		t = (uint8(temp[xi]) % 2) ^ k.cw[t][i-1].ct[xi]
 
 	}
