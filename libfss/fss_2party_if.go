@@ -9,31 +9,39 @@ import (
 )
 
 type CWLt struct {
-	cs [2][]byte
-	ct [2]uint8
-	cv [2]uint
+	cs [][]byte
+	ct []uint8
+	cv []uint
 }
 
 type ServerKeyLt struct {
-	s  [2][]byte
-	t  [2]uint8
-	v  [2]uint
-	cw [2][]CWLt // Should be length n
+	s  [][]byte
+	t  []uint8
+	v  []uint
+	cw [][]CWLt // Should be length n
 }
 
 func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	k := make([]ServerKeyLt, 2)
 
+	k[0].cw = make([][]CWLt, 2)
 	k[0].cw[0] = make([]CWLt, f.NumBits)
 	k[0].cw[1] = make([]CWLt, f.NumBits)
+	k[1].cw = make([][]CWLt, 2)
 	k[1].cw[0] = make([]CWLt, f.NumBits)
 	k[1].cw[1] = make([]CWLt, f.NumBits)
 
+	k[0].s = make([][]byte, 2)
 	k[0].s[0] = make([]byte, aes.BlockSize)
 	k[0].s[1] = make([]byte, aes.BlockSize)
+	k[1].s = make([][]byte, 2)
 	k[1].s[0] = make([]byte, aes.BlockSize)
 	k[1].s[1] = make([]byte, aes.BlockSize)
 
+	k[0].t = make([]uint8, 2)
+	k[1].t = make([]uint8, 2)
+	k[0].v = make([]uint, 2)
+	k[1].v = make([]uint, 2)
 	// Figure out first bit
 	aBit := getBit(a, (f.N - f.NumBits + 1), f.N)
 	naBit := aBit ^ 1
@@ -173,10 +181,17 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 
 		cv[tbit1][naBit] = cv[tbit0][naBit] + v0[naBit] - v1[naBit] - b*aBit
 
+		k[0].cw[0][i].cs = make([][]byte, 2)
 		k[0].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
 		k[0].cw[0][i].cs[1] = make([]byte, aes.BlockSize)
+		k[0].cw[1][i].cs = make([][]byte, 2)
 		k[0].cw[1][i].cs[0] = make([]byte, aes.BlockSize)
 		k[0].cw[1][i].cs[1] = make([]byte, aes.BlockSize)
+
+		k[0].cw[0][i].ct = make([]uint8, 2)
+		k[0].cw[0][i].cv = make([]uint, 2)
+		k[0].cw[1][i].ct = make([]uint8, 2)
+		k[0].cw[1][i].cv = make([]uint, 2)
 
 		copy(k[0].cw[0][i].cs[0], cs0[0:aes.BlockSize])
 		copy(k[0].cw[0][i].cs[1], cs0[aes.BlockSize:aes.BlockSize*2])
@@ -192,10 +207,17 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		k[0].cw[1][i].cv[0] = cv[1][0]
 		k[0].cw[1][i].cv[1] = cv[1][1]
 
+		k[1].cw[0][i].cs = make([][]byte, 2)
 		k[1].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
 		k[1].cw[0][i].cs[1] = make([]byte, aes.BlockSize)
+		k[1].cw[0][i].cs = make([][]byte, 2)
 		k[1].cw[1][i].cs[0] = make([]byte, aes.BlockSize)
 		k[1].cw[1][i].cs[1] = make([]byte, aes.BlockSize)
+
+		k[1].cw[0][i].ct = make([]uint8, 2)
+		k[1].cw[0][i].cv = make([]uint, 2)
+		k[1].cw[1][i].ct = make([]uint8, 2)
+		k[1].cw[1][i].cv = make([]uint, 2)
 
 		copy(k[1].cw[0][i].cs[0], cs0[0:aes.BlockSize])
 		copy(k[1].cw[0][i].cs[1], cs0[aes.BlockSize:aes.BlockSize*2])
@@ -245,20 +267,16 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 }
 
 func (Fss f) evaluateLt(k ServerKeyLt, x uint) uint {
-	xi := getBit(x, (f.N - f.numBits + 1))
-	s := k.s[xi]
-	t := k.t[xi]
-	v := k.v[xi]
+	xBit := getBit(x, (f.N - f.numBits + 1))
+	s := k.s[xBit]
+	t := k.t[xBit]
+	v := k.v[xBit]
 
-	// Use these plaintexts to get values from PRF
-	sArray := make([]byte, AES_SIZE*2)
-	temp := make([]uint8, AES_SIZE)
-
-	vByte := make([]byte, AES_SIZE)
-	for i := 1; i < N; i++ {
+	for i := 1; i < f.N; i++ {
 		// Get current bit
-		xi = getBit(x, uint(i+1))
+		xBit = getBit(x, uint(f.N-f.NumBits+i+1))
 
+		// TODO: start fixing here!!!!
 		block, err := aes.NewCipher(s)
 		if err != nil {
 			panic(err)
