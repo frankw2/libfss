@@ -160,64 +160,56 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		ct0[naBit] = uint8(temp[1]) % 2
 		ct1[naBit] = ct0[naBit] ^ t0[naBit] ^ t1[naBit]
 
-		cv[tbit0][a], err = uint(rand.Int())
+		cv[tbit0][aBit], err = uint(rand.Int())
+		if err != nil {
+			panic(err)
+		}
+		cv[tbit1][aBit] = v0[a] + cv[tbit0][aBit] - v1[aBit]
+
+		cv[tbit0][naBit], err = uint(rand.Int())
 		if err != nil {
 			panic(err)
 		}
 
-		cv[tbit1][a] = new(big.Int)
-		cv[tbit1][a].Add(cv[tbit0][a], v0[a])
-		cv[tbit1][a].Sub(cv[tbit1][a], v1[a])
-		cv[tbit1][a].Mod(cv[tbit1][a], prime)
+		cv[tbit1][naBit] = cv[tbit0][naBit] + v0[naBit] - v1[naBit] - b*aBit
 
-		cv[tbit0][na], err = rand.Int(rand.Reader, prime)
-		if err != nil {
-			panic(err)
-		}
+		k[0].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
+		k[0].cw[0][i].cs[1] = make([]byte, aes.BlockSize)
+		k[0].cw[1][i].cs[0] = make([]byte, aes.BlockSize)
+		k[0].cw[1][i].cs[1] = make([]byte, aes.BlockSize)
 
-		cv[tbit1][na] = new(big.Int)
-		cv[tbit1][na].Add(cv[tbit0][na], v0[na])
-		cv[tbit1][na].Sub(cv[tbit1][na], v1[na])
-		cv[tbit1][na].Sub(cv[tbit1][na], new(big.Int).SetUint64(b_input*uint64(a)))
-		cv[tbit1][na].Mod(cv[tbit1][na], prime)
+		copy(k[0].cw[0][i].cs[0], cs0[0:aes.BlockSize])
+		copy(k[0].cw[0][i].cs[1], cs0[aes.BlockSize:aes.BlockSize*2])
+		k[0].cw[0][i].ct[0] = ct0[0]
+		k[0].cw[0][i].ct[1] = ct0[1]
+		copy(k[0].cw[1][i].cs[0], cs1[0:aes.BlockSize])
+		copy(k[0].cw[1][i].cs[1], cs1[aes.BlockSize:aes.BlockSize*2])
+		k[0].cw[1][i].ct[0] = ct1[0]
+		k[0].cw[1][i].ct[1] = ct1[1]
 
-		k0.cw[0][i].cs[0] = make([]byte, AES_SIZE)
-		k0.cw[0][i].cs[1] = make([]byte, AES_SIZE)
-		k0.cw[1][i].cs[0] = make([]byte, AES_SIZE)
-		k0.cw[1][i].cs[1] = make([]byte, AES_SIZE)
+		k[0].cw[0][i].cv[0] = cv[0][0]
+		k[0].cw[0][i].cv[1] = cv[0][1]
+		k[0].cw[1][i].cv[0] = cv[1][0]
+		k[0].cw[1][i].cv[1] = cv[1][1]
 
-		copy(k0.cw[0][i].cs[0], cs0[0:AES_SIZE])
-		copy(k0.cw[0][i].cs[1], cs0[AES_SIZE:AES_SIZE*2])
-		k0.cw[0][i].ct[0] = ct0[0]
-		k0.cw[0][i].ct[1] = ct0[1]
-		copy(k0.cw[1][i].cs[0], cs1[0:AES_SIZE])
-		copy(k0.cw[1][i].cs[1], cs1[AES_SIZE:AES_SIZE*2])
-		k0.cw[1][i].ct[0] = ct1[0]
-		k0.cw[1][i].ct[1] = ct1[1]
+		k[1].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
+		k[1].cw[0][i].cs[1] = make([]byte, aes.BlockSize)
+		k[1].cw[1][i].cs[0] = make([]byte, aes.BlockSize)
+		k[1].cw[1][i].cs[1] = make([]byte, aes.BlockSize)
 
-		k0.cw[0][i].cv[0] = cv[0][0]
-		k0.cw[0][i].cv[1] = cv[0][1]
-		k0.cw[1][i].cv[0] = cv[1][0]
-		k0.cw[1][i].cv[1] = cv[1][1]
+		copy(k[1].cw[0][i].cs[0], cs0[0:aes.BlockSize])
+		copy(k[1].cw[0][i].cs[1], cs0[aes.BlockSize:aes.BlockSize*2])
+		k[1].cw[0][i].ct[0] = ct0[0]
+		k[1].cw[0][i].ct[1] = ct0[1]
+		copy(k[1].cw[1][i].cs[0], cs1[0:aes.BlockSize])
+		copy(k[1].cw[1][i].cs[1], cs1[aes.BlockSize:aes.BlockSize*2])
+		k[1].cw[1][i].ct[0] = ct1[0]
+		k[1].cw[1][i].ct[1] = ct1[1]
 
-		k1.cw[0][i].cs[0] = make([]byte, AES_SIZE)
-		k1.cw[0][i].cs[1] = make([]byte, AES_SIZE)
-		k1.cw[1][i].cs[0] = make([]byte, AES_SIZE)
-		k1.cw[1][i].cs[1] = make([]byte, AES_SIZE)
-
-		copy(k1.cw[0][i].cs[0], cs0[0:AES_SIZE])
-		copy(k1.cw[0][i].cs[1], cs0[AES_SIZE:AES_SIZE*2])
-		k1.cw[0][i].ct[0] = ct0[0]
-		k1.cw[0][i].ct[1] = ct0[1]
-		copy(k1.cw[1][i].cs[0], cs1[0:AES_SIZE])
-		copy(k1.cw[1][i].cs[1], cs1[AES_SIZE:AES_SIZE*2])
-		k1.cw[1][i].ct[0] = ct1[0]
-		k1.cw[1][i].ct[1] = ct1[1]
-
-		k1.cw[0][i].cv[0] = cv[0][0]
-		k1.cw[0][i].cv[1] = cv[0][1]
-		k1.cw[1][i].cv[0] = cv[1][0]
-		k1.cw[1][i].cv[1] = cv[1][1]
+		k[1].cw[0][i].cv[0] = cv[0][0]
+		k[1].cw[0][i].cv[1] = cv[0][1]
+		k[1].cw[1][i].cv[0] = cv[1][0]
+		k[1].cw[1][i].cv[1] = cv[1][1]
 
 		// Find correct cs and ct
 		var cs, ct []byte
@@ -233,7 +225,7 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		for j := 0; j < len(key0); j++ {
 			key0[j] = s0[aStart+j] ^ cs[aStart+j]
 		}
-		tbit0 = t0[a] ^ ct[a]
+		tbit0 = t0[aBit] ^ ct[aBit]
 		if tbit1 == 1 {
 			cs = cs1
 			ct = ct1
@@ -246,17 +238,17 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 			key1[j] = s1[aStart+j] ^ cs[aStart+j]
 		}
 
-		tbit1 = t1[a] ^ ct[a]
+		tbit1 = t1[aBit] ^ ct[aBit]
 	}
 
-	return k0, k1
+	return k
 }
 
-func evaluateLt(k *ServerKeyLt, x uint64) uint {
-	xi := getBit(x, 1)
+func (Fss f) evaluateLt(k ServerKeyLt, x uint) uint {
+	xi := getBit(x, (f.N - f.numBits + 1))
 	s := k.s[xi]
 	t := k.t[xi]
-	v := new(big.Int).Set(k.v[xi])
+	v := k.v[xi]
 
 	// Use these plaintexts to get values from PRF
 	sArray := make([]byte, AES_SIZE*2)
