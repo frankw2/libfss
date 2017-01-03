@@ -6,6 +6,10 @@ import (
 	"crypto/rand"
 )
 
+// Initialize functions for client and server
+// You should initialize after each query on the database like in
+// Private Information Retrieval (PIR)
+
 // initialize client with this function
 // numBits represents the input domain for the function, i.e. the number
 // of bits to check

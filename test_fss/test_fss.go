@@ -28,9 +28,9 @@ func main() {
 
 	var anslt0, anslt1 uint = 0, 0
 	anslt0 = fServer.EvaluateLt(fssKeysLt[0], 8)
-	anslt1 = fServer.EvaluateLt(fssKeysLt[0], 8)
+	anslt1 = fServer.EvaluateLt(fssKeysLt[1], 8)
 	fmt.Println("Less than (should be non-zero):", anslt0-anslt1)
-	anslt0 = fServer.EvaluateLt(fssKeysLt[1], 11)
+	anslt0 = fServer.EvaluateLt(fssKeysLt[0], 11)
 	anslt1 = fServer.EvaluateLt(fssKeysLt[1], 11)
 	fmt.Println("Greater than (should be zero):", anslt0-anslt1)
 

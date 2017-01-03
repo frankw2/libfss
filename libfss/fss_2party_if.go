@@ -62,7 +62,8 @@ func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 	rand.Read(s0[naStart : naStart+aes.BlockSize])
 	// Ensure the "not a" bits are the same
 	copy(s1[naStart:naStart+aes.BlockSize], s0[naStart:naStart+aes.BlockSize])
-
+	//fmt.Println("s0:", s0)
+	//fmt.Println("s1:", s1)
 	// Set initial "t" bits
 	t0 := make([]uint8, 2)
 	t1 := make([]uint8, 2)
@@ -71,7 +72,7 @@ func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 
 	// Make sure t0a and t1a are different
 	t0[aBit] = uint8(temp[0]) % 2
-	t1[aBit] = (t0[aBit] + 1) % 2
+	t1[aBit] = t0[aBit] ^ 1
 
 	// Make sure t0na = t1na
 	t0[naBit] = uint8(temp[1]) % 2
@@ -83,7 +84,7 @@ func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 
 	// make sure v0a + -v1a = 0
 	v0[aBit] = randomCryptoInt()
-	v1[aBit] = -v0[aBit]
+	v1[aBit] = v0[aBit]
 
 	// make sure v0na + -v1na = a1 * b
 	v0[naBit] = randomCryptoInt()
@@ -104,7 +105,10 @@ func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 	k[1].v[1] = v1[1]
 
 	// Assign keys and start cipher
-	key0, key1 := s0[aStart:aStart+aes.BlockSize], s1[aStart:aStart+aes.BlockSize]
+	key0 := make([]byte, aes.BlockSize)
+	key1 := make([]byte, aes.BlockSize)
+	copy(key0, s0[aStart:aStart+aes.BlockSize])
+	copy(key1, s1[aStart:aStart+aes.BlockSize])
 	tbit0, tbit1 := t0[aBit], t1[aBit]
 
 	cs0 := make([]byte, aes.BlockSize*2)
@@ -140,6 +144,8 @@ func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 		conv, _ = binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24])
 		v1[1] = uint(conv)
 
+		//fmt.Println("s0:", s0)
+		//fmt.Println("s1:", s1)
 		// Redefine aStart and naStart based on new a's
 		aStart = int(aes.BlockSize * aBit)
 		naStart = int(aes.BlockSize * naBit)
@@ -264,7 +270,6 @@ func (f Fss) EvaluateLt(k ServerKeyLt, x uint) uint {
 	copy(s, k.s[xBit])
 	t := k.t[xBit]
 	v := k.v[xBit]
-
 	for i := uint(1); i < f.NumBits; i++ {
 		// Get current bit
 		xBit = getBit(x, uint(f.N-f.NumBits+i+1), f.N)
@@ -274,15 +279,14 @@ func (f Fss) EvaluateLt(k ServerKeyLt, x uint) uint {
 		// Pick the right values to use based on bit of x
 		xStart := int(aes.BlockSize * xBit)
 		copy(s, f.Out[xStart:xStart+aes.BlockSize])
+		//fmt.Println(s)
 		for j := 0; j < aes.BlockSize; j++ {
 			s[j] = s[j] ^ k.cw[t][i-1].cs[xBit][j]
 		}
 		vStart := aes.BlockSize*2 + 8 + 8*xBit
 		conv, _ := binary.Uvarint(f.Out[vStart : vStart+8])
 		v = v + uint(conv) + k.cw[t][i-1].cv[xBit]
-		t = (uint8(f.Out[aes.BlockSize+xBit]) % 2) ^ k.cw[t][i-1].ct[xBit]
-
+		t = (uint8(f.Out[2*aes.BlockSize+xBit]) % 2) ^ k.cw[t][i-1].ct[xBit]
 	}
-
 	return v
 }
