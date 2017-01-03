@@ -24,7 +24,7 @@ type ServerKeyLt struct {
 }
 
 // Generate the function shares for a function that evaluates to b when input x < a.
-func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
+func (f Fss) GenerateTreeLt(a, b uint) []ServerKeyLt {
 	k := make([]ServerKeyLt, 2)
 
 	k[0].cw = make([][]CWLt, 2)
@@ -117,7 +117,7 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	cv[0] = make([]uint, 2)
 	cv[1] = make([]uint, 2)
 
-	for i := uint(0); i < f.N-1; i++ {
+	for i := uint(0); i < f.NumBits-1; i++ {
 		// Figure out next bit
 		aBit = getBit(a, (f.N - f.NumBits + i + 2), f.N)
 		naBit = aBit ^ 1
@@ -168,7 +168,7 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		ct1[naBit] = ct0[naBit] ^ t0[naBit] ^ t1[naBit]
 
 		cv[tbit0][aBit] = randomCryptoInt()
-		cv[tbit1][aBit] = v0[a] + cv[tbit0][aBit] - v1[aBit]
+		cv[tbit1][aBit] = v0[aBit] + cv[tbit0][aBit] - v1[aBit]
 
 		cv[tbit0][naBit] = randomCryptoInt()
 		cv[tbit1][naBit] = cv[tbit0][naBit] + v0[naBit] - v1[naBit] - b*uint(aBit)
@@ -202,7 +202,7 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		k[1].cw[0][i].cs = make([][]byte, 2)
 		k[1].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
 		k[1].cw[0][i].cs[1] = make([]byte, aes.BlockSize)
-		k[1].cw[0][i].cs = make([][]byte, 2)
+		k[1].cw[1][i].cs = make([][]byte, 2)
 		k[1].cw[1][i].cs[0] = make([]byte, aes.BlockSize)
 		k[1].cw[1][i].cs[1] = make([]byte, aes.BlockSize)
 
@@ -258,14 +258,14 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	return k
 }
 
-func (f Fss) evaluateLt(k ServerKeyLt, x uint) uint {
+func (f Fss) EvaluateLt(k ServerKeyLt, x uint) uint {
 	xBit := getBit(x, (f.N - f.NumBits + 1), f.N)
 	s := make([]byte, aes.BlockSize)
 	copy(s, k.s[xBit])
 	t := k.t[xBit]
 	v := k.v[xBit]
 
-	for i := uint(1); i < f.N; i++ {
+	for i := uint(1); i < f.NumBits; i++ {
 		// Get current bit
 		xBit = getBit(x, uint(f.N-f.NumBits+i+1), f.N)
 
