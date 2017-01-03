@@ -2,6 +2,7 @@ package libfss
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 )
 

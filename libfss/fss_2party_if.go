@@ -82,11 +82,11 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	v1 := make([]uint, 2)
 
 	// make sure v0a + -v1a = 0
-	v0[aBit], _ = uint(rand.Int())
+	v0[aBit] = randomCryptoInt()
 	v1[aBit] = -v0[aBit]
 
 	// make sure v0na + -v1na = a1 * b
-	v0[naBit], _ = uint(rand.Int())
+	v0[naBit] = randomCryptoInt()
 	v1[naBit] = v0[naBit] - b*uint(aBit)
 
 	// Store generated values into the key
@@ -117,7 +117,7 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	cv[0] = make([]uint, 2)
 	cv[1] = make([]uint, 2)
 
-	for i := 0; i < f.N-1; i++ {
+	for i := uint(0); i < f.N-1; i++ {
 		// Figure out next bit
 		aBit = getBit(a, (f.N - f.NumBits + i + 2), f.N)
 		naBit = aBit ^ 1
@@ -126,15 +126,19 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		copy(s0, f.Out[:aes.BlockSize*2])
 		t0[0] = f.Out[aes.BlockSize*2] % 2
 		t0[1] = f.Out[aes.BlockSize*2+1] % 2
-		v0[0], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16]))
-		v0[1], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24]))
+		conv, _ := binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16])
+		v0[0] = uint(conv)
+		conv, _ = binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24])
+		v0[1] = uint(conv)
 
 		prf(key1, f.FixedBlocks, 4, f.Temp, f.Out)
 		copy(s1, f.Out[:aes.BlockSize*2])
 		t1[0] = f.Out[aes.BlockSize*2] % 2
 		t1[1] = f.Out[aes.BlockSize*2+1] % 2
-		v1[0], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16]))
-		v1[1], _ = uint(binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24]))
+		conv, _ = binary.Uvarint(f.Out[aes.BlockSize*2+8 : aes.BlockSize*2+16])
+		v1[0] = uint(conv)
+		conv, _ = binary.Uvarint(f.Out[aes.BlockSize*2+16 : aes.BlockSize*2+24])
+		v1[1] = uint(conv)
 
 		// Redefine aStart and naStart based on new a's
 		aStart = int(aes.BlockSize * aBit)
@@ -163,18 +167,11 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 		ct0[naBit] = uint8(temp[1]) % 2
 		ct1[naBit] = ct0[naBit] ^ t0[naBit] ^ t1[naBit]
 
-		cv[tbit0][aBit], err = uint(rand.Int())
-		if err != nil {
-			panic(err)
-		}
+		cv[tbit0][aBit] = randomCryptoInt()
 		cv[tbit1][aBit] = v0[a] + cv[tbit0][aBit] - v1[aBit]
 
-		cv[tbit0][naBit], err = uint(rand.Int())
-		if err != nil {
-			panic(err)
-		}
-
-		cv[tbit1][naBit] = cv[tbit0][naBit] + v0[naBit] - v1[naBit] - b*aBit
+		cv[tbit0][naBit] = randomCryptoInt()
+		cv[tbit1][naBit] = cv[tbit0][naBit] + v0[naBit] - v1[naBit] - b*uint(aBit)
 
 		k[0].cw[0][i].cs = make([][]byte, 2)
 		k[0].cw[0][i].cs[0] = make([]byte, aes.BlockSize)
@@ -261,28 +258,29 @@ func (f Fss) generateTreeLt(a, b uint) []ServerKeyLt {
 	return k
 }
 
-func (Fss f) evaluateLt(k ServerKeyLt, x uint) uint {
-	xBit := getBit(x, (f.N - f.numBits + 1))
+func (f Fss) evaluateLt(k ServerKeyLt, x uint) uint {
+	xBit := getBit(x, (f.N - f.NumBits + 1), f.N)
 	s := make([]byte, aes.BlockSize)
 	copy(s, k.s[xBit])
 	t := k.t[xBit]
 	v := k.v[xBit]
 
-	for i := 1; i < f.N; i++ {
+	for i := uint(1); i < f.N; i++ {
 		// Get current bit
-		xBit = getBit(x, uint(f.N-f.NumBits+i+1))
+		xBit = getBit(x, uint(f.N-f.NumBits+i+1), f.N)
 
 		prf(s, f.FixedBlocks, 4, f.Temp, f.Out)
 
 		// Pick the right values to use based on bit of x
-		xStart := int(aes.BlockSize * xi)
+		xStart := int(aes.BlockSize * xBit)
 		copy(s, f.Out[xStart:xStart+aes.BlockSize])
 		for j := 0; j < aes.BlockSize; j++ {
 			s[j] = s[j] ^ k.cw[t][i-1].cs[xBit][j]
 		}
 		vStart := aes.BlockSize*2 + 8 + 8*xBit
-		v = v + uint(binary.Uvarint(f.Out[vStart:vStart+8])) + k.cw[t][i-1].cv[xBit]
-		t = (uint8(temp[xi]) % 2) ^ k.cw[t][i-1].ct[xi]
+		conv, _ := binary.Uvarint(f.Out[vStart : vStart+8])
+		v = v + uint(conv) + k.cw[t][i-1].cv[xBit]
+		t = (uint8(f.Out[aes.BlockSize+xBit]) % 2) ^ k.cw[t][i-1].ct[xBit]
 
 	}
 

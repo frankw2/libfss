@@ -3,6 +3,8 @@ package libfss
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"encoding/binary"
 )
 
 type Fss struct {
@@ -16,6 +18,13 @@ type Fss struct {
 }
 
 const initPRFLen int = 4
+
+func randomCryptoInt() uint {
+	b := make([]byte, 8)
+	rand.Read(b)
+	ans, _ := binary.Uvarint(b)
+	return uint(ans)
+}
 
 // 0th position is the most significant bit
 // True if bit is 1 and False if bit is 0
