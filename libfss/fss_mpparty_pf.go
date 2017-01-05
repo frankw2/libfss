@@ -79,9 +79,10 @@ func (f Fss) GenerateTreeEqMP(a, b, num_p uint) []FssKeyEqMP {
 	cw := make([][]uint32, p2)
 	cw_temp := make([]uint32, mu)
 	cw_helper := make([]byte, f.M*mu)
+	numBlocks := uint(math.Ceil(float64(f.M*mu) / float64(aes.BlockSize)))
 	// Create correction words
 	for i := uint(0); i < p2; i++ {
-		prf(s[gamma][i], f.FixedBlocks, 4, f.Temp, f.Out)
+		prf(s[gamma][i], f.FixedBlocks, numBlocks, f.Temp, f.Out)
 		for k := uint(0); k < mu; k++ {
 			tempInt := binary.LittleEndian.Uint32(f.Out[f.M*k : f.M*k+f.M])
 			cw_temp[k] = cw_temp[k] ^ tempInt
@@ -127,4 +128,37 @@ func (f Fss) GenerateTreeEqMP(a, b, num_p uint) []FssKeyEqMP {
 		keys[i].NumParties = num_p
 	}
 	return keys
+}
+
+func (f Fss) EvaluateEqMP(k FssKeyEqMP, x uint) uint32 {
+	p2 := uint(math.Pow(2, float64(k.NumParties-1)))
+	mu := uint(math.Ceil(math.Pow(2, float64(f.NumBits)/2) * math.Pow(2, float64(k.NumParties-1)/2)))
+
+	delta := x & ((1 << (f.N / 2)) - 1)
+	gamma := (x & (((1 << (f.N + 1) / 2) - 1) << f.N / 2)) >> f.N / 2
+	mBytes := f.M * mu
+
+	y := make([]uint32, mu)
+	for i := uint(0); i < p2; i++ {
+		s := k.Sigma[gamma][i*aes.BlockSize : i*aes.BlockSize+aes.BlockSize]
+		all_zero_bytes := true
+		for j := uint(0); j < aes.BlockSize; j++ {
+			if s[j] != 0 {
+				all_zero_bytes = false
+				break
+			}
+		}
+		if all_zero_bytes == false {
+			numBlocks := uint(math.Ceil(float64(mBytes) / float64(aes.BlockSize)))
+			prf(s, f.FixedBlocks, numBlocks, f.Temp, f.Out)
+			for k := uint(0); k < mu; k++ {
+				tempInt := binary.LittleEndian.Uint32(f.Out[f.M*k : f.M*k+f.M])
+				y[k] = y[k] ^ tempInt
+			}
+			for j := uint(0); j < mu; j++ {
+				y[j] = k.CW[i][j] ^ y[j]
+			}
+		}
+	}
+	return y[delta]
 }
