@@ -37,6 +37,7 @@ func ClientInitialize(numBits uint) *Fss {
 	} else {
 		f.N = 64
 	}
+	f.M = 4 // Default is 4. Only used in multiparty. To change this, you should change the size of the CW in multiparty keys. Read comments there.
 	f.Temp = make([]byte, aes.BlockSize)
 	f.Out = make([]byte, aes.BlockSize*initPRFLen)
 	return f
@@ -68,6 +69,7 @@ func ServerInitialize(prfKeys [][]byte, numBits uint) *Fss {
 	} else {
 		f.N = 64
 	}
+	f.M = 4 // Again default = 4. Look at comments in ClientInitialize to understand this.
 	f.Temp = make([]byte, aes.BlockSize)
 	f.Out = make([]byte, aes.BlockSize*initPRFLen)
 

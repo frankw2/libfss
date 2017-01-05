@@ -11,6 +11,7 @@ type Fss struct {
 	// store keys used in fixedBlocks so that they can be sent to the server
 	PrfKeys     [][]byte
 	FixedBlocks []cipher.Block
+	M           uint // used only in multiparty. It is default to 4. If you want to change this, you should also change the size of the CWs in the multiparty keys.
 	N           uint
 	NumBits     uint   // number of bits in domain
 	Temp        []byte // temporary slices so that we only need to allocate memory at the beginning
