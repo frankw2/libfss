@@ -19,7 +19,7 @@ func ClientInitialize(numBits uint) *Fss {
 	f.PrfKeys = make([][]byte, initPRFLen)
 	// Create fixed AES blocks
 	f.FixedBlocks = make([]cipher.Block, initPRFLen)
-	for i := 0; i < initPRFLen; i++ {
+	for i := uint(0); i < initPRFLen; i++ {
 		f.PrfKeys[i] = make([]byte, aes.BlockSize)
 		rand.Read(f.PrfKeys[i])
 		//fmt.Println("client")

@@ -8,13 +8,15 @@ package libfss
 // the client has to add it locally.
 
 import (
+	"crypto/aes"
 	"crypto/rand"
+	"encoding/binary"
 	"math"
 )
 
 type FssKeyEqMP struct {
 	NumParties uint
-	CW         []uint32 //Assume CW is 32-bit because f.M is 4. If you change f.M, you should change this
+	CW         [][]uint32 //Assume CW is 32-bit because f.M is 4. If you change f.M, you should change this
 	Sigma      [][]byte
 }
 
@@ -24,7 +26,7 @@ func (f Fss) GenerateTreeEqMP(a, b, num_p uint) []FssKeyEqMP {
 	mu := uint(math.Ceil(math.Pow(2, float64(f.NumBits)/2) * math.Pow(2, float64(num_p-1)/2.0)))
 	v := uint(math.Ceil(math.Pow(2, float64(f.NumBits)) / float64(mu)))
 
-	//delta := a & ((1 << (f.NumBits / 2)) - 1)
+	delta := a & ((1 << (f.NumBits / 2)) - 1)
 	gamma := (a & ((1<<(f.NumBits+1)/2 - 1) << f.NumBits / 2)) >> f.NumBits / 2
 	aArr := make([][][]byte, v)
 	for i := uint(0); i < v; i++ {
@@ -64,10 +66,65 @@ func (f Fss) GenerateTreeEqMP(a, b, num_p uint) []FssKeyEqMP {
 			}
 		}
 	}
-	//s := make([][][]byte, v)
-	for i := uint(0); i < v; i++ {
 
+	s := make([][][]byte, v)
+	for i := uint(0); i < v; i++ {
+		s[i] = make([][]byte, p2)
+		for j := uint(0); j < p2; j++ {
+			s[i][j] = make([]byte, aes.BlockSize)
+			rand.Read(s[i][j])
+		}
 	}
 
+	cw := make([][]uint32, p2)
+	cw_temp := make([]uint32, mu)
+	cw_helper := make([]byte, f.M*mu)
+	// Create correction words
+	for i := uint(0); i < p2; i++ {
+		prf(s[gamma][i], f.FixedBlocks, 4, f.Temp, f.Out)
+		for k := uint(0); k < mu; k++ {
+			tempInt := binary.LittleEndian.Uint32(f.Out[f.M*k : f.M*k+f.M])
+			cw_temp[k] = cw_temp[k] ^ tempInt
+		}
+		cw[i] = make([]uint32, mu)
+		// The last CW has to fulfill a certain condition, so we deal with it separately
+		if i == (p2 - 1) {
+			break
+		}
+		rand.Read(cw_helper)
+		for j := uint(0); j < mu; j++ {
+			cw[i][j] = binary.LittleEndian.Uint32(cw_helper[f.M*j : f.M*j+f.M])
+			cw_temp[j] = cw_temp[j] ^ cw[i][j]
+		}
+	}
+
+	for i := uint(0); i < mu; i++ {
+		if i == delta {
+			cw[p2-1][i] = uint32(b) ^ cw_temp[i]
+		} else {
+			cw[p2-1][i] = cw_temp[i]
+		}
+	}
+
+	sigma := make([][][]byte, num_p)
+	for i := uint(0); i < num_p; i++ {
+		// set number of parties in keys
+		sigma[i] = make([][]byte, v)
+		for j := uint(0); j < v; j++ {
+			sigma[i][j] = make([]byte, aes.BlockSize*p2)
+			for k := uint(0); k < p2; k++ {
+				// if aArr[j][i][k] == 0, sigma[i][j] should be 0
+				if aArr[j][i][k] != 0 {
+					copy(sigma[i][j][k*aes.BlockSize:k*aes.BlockSize+aes.BlockSize], s[j][k])
+				}
+			}
+		}
+	}
+
+	for i := uint(0); i < num_p; i++ {
+		keys[i].Sigma = sigma[i]
+		keys[i].CW = cw
+		keys[i].NumParties = num_p
+	}
 	return keys
 }

@@ -18,7 +18,7 @@ type Fss struct {
 	Out         []byte
 }
 
-const initPRFLen int = 4
+const initPRFLen uint = 4
 
 func randomCryptoInt() uint {
 	b := make([]byte, 8)
@@ -42,6 +42,10 @@ func getBit(n, pos, N uint) byte {
 // fixed key PRF (Matyas–Meyer–Oseas one way compression function)
 // numBlocks represents the number
 func prf(x []byte, aesBlocks []cipher.Block, numBlocks uint, temp, out []byte) {
+	// If request blocks greater than actual needed blocks, grow output array
+	if numBlocks > initPRFLen {
+		out = make([]byte, numBlocks*aes.BlockSize)
+	}
 	for i := uint(0); i < numBlocks; i++ {
 		// get AES_k[i](x)
 		aesBlocks[i].Encrypt(temp, x)
