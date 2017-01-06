@@ -27,7 +27,7 @@ func (f Fss) GenerateTreeEqMP(a, b, num_p uint) []FssKeyEqMP {
 	v := uint(math.Ceil(math.Pow(2, float64(f.NumBits)) / float64(mu)))
 
 	delta := a & ((1 << (f.NumBits / 2)) - 1)
-	gamma := (a & ((1<<(f.NumBits+1)/2 - 1) << f.NumBits / 2)) >> f.NumBits / 2
+	gamma := (a & (((1 << (f.NumBits + 1) / 2) - 1) << f.NumBits / 2)) >> f.NumBits / 2
 	aArr := make([][][]byte, v)
 	for i := uint(0); i < v; i++ {
 		aArr[i] = make([][]byte, num_p)
@@ -134,8 +134,8 @@ func (f Fss) EvaluateEqMP(k FssKeyEqMP, x uint) uint32 {
 	p2 := uint(math.Pow(2, float64(k.NumParties-1)))
 	mu := uint(math.Ceil(math.Pow(2, float64(f.NumBits)/2) * math.Pow(2, float64(k.NumParties-1)/2)))
 
-	delta := x & ((1 << (f.N / 2)) - 1)
-	gamma := (x & (((1 << (f.N + 1) / 2) - 1) << f.N / 2)) >> f.N / 2
+	delta := x & ((1 << (f.NumBits / 2)) - 1)
+	gamma := (x & (((1 << (f.NumBits + 1) / 2) - 1) << f.NumBits / 2)) >> f.NumBits / 2
 	mBytes := f.M * mu
 
 	y := make([]uint32, mu)
