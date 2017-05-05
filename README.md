@@ -1,3 +1,5 @@
+# Function Secret Sharing (FSS) Library
+
 This is a function secret sharing (FSS) library for Go. A C++ version (used in the paper) will be released soon!
 
 This library is based the following papers:
