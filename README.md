@@ -2,6 +2,8 @@
 
 This is a function secret sharing (FSS) library for Go. A C++ version (used in the paper) will be released soon!
 
+To get a sense on how to use the library, please look at the example programs in the test_fss/ folder.
+
 This library is based the following papers:
 
 - Boyle, Elette, Niv Gilboa, and Yuval Ishai. "[Function Secret Sharing: Improvements and Extensions.](https://pdfs.semanticscholar.org/6b3a/ea37625702e98e5033e1107403e319b4df01.pdf)" Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security. ACM, 2016.
