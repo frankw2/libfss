@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/frankw2/libfss"
+	"github.com/frankw2/go/libfss"
 )
 
 func main() {
