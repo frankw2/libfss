@@ -11,19 +11,18 @@ import (
 	"math"
 )
 
-// Initialize client with this function
-// numBits represents the input domain for the function, i.e. the number
-// of bits to check
-func ClientInitialize(numBits uint) *Fss {
+// Upon receiving query from client, initialize server with
+// this function. The server, unlike the client
+// receives prfKeys, so it doesn't need to pick random ones
+func ServerInitialize(prfKeys [][]byte, numBits uint) *Fss {
 	f := new(Fss)
 	f.NumBits = numBits
 	f.PrfKeys = make([][]byte, initPRFLen)
-	// Create fixed AES blocks
 	f.FixedBlocks = make([]cipher.Block, initPRFLen)
-	for i := uint(0); i < initPRFLen; i++ {
+	for i := range prfKeys {
 		f.PrfKeys[i] = make([]byte, aes.BlockSize)
-		rand.Read(f.PrfKeys[i])
-		//fmt.Println("client")
+		copy(f.PrfKeys[i], prfKeys[i])
+		//fmt.Println("server")
 		//fmt.Println(f.PrfKeys[i])
 		block, err := aes.NewCipher(f.PrfKeys[i])
 		if err != nil {
@@ -38,9 +37,10 @@ func ClientInitialize(numBits uint) *Fss {
 	} else {
 		f.N = 64
 	}
-	f.M = 4 // Default is 4. Only used in multiparty. To change this, you should change the size of the CW in multiparty keys. Read comments there.
+	f.M = 4 // Again default = 4. Look at comments in ClientInitialize to understand this.
 	f.Temp = make([]byte, aes.BlockSize)
 	f.Out = make([]byte, aes.BlockSize*initPRFLen)
+
 	return f
 }
 
