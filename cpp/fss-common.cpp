@@ -1,6 +1,6 @@
 #include "fss-common.h"
 
-void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size) {
+void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size, AES_KEY* aes_keys) {
 
     // check if there is aes-ni instruction
     uint32_t eax, ebx, ecx, edx;

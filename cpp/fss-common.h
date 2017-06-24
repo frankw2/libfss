@@ -5,6 +5,9 @@
 #include "openssl-aes.h"
 
 #include <cpuid.h>
+#include <gmp.h>
+#include <gmpxx.h>
+#include <iostream>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -18,6 +21,7 @@ struct Fss {
     AES_KEY* aes_keys;
     uint32_t m; // used only in multiparty. Default is 4
     uint32_t numBits; // number of bits in domain 
+    mpz_class prime;
 };
 
 struct CWEq {
@@ -55,6 +59,6 @@ inline int getBit(uint64_t n, uint64_t pos) {
     }
 }
 
-void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size);
+void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size, AES_KEY* aes_keys);
 
 #endif
