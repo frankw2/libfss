@@ -119,7 +119,7 @@ func (f Fss) EvaluateLt(k ServerKeyLt, x uint) uint {
 	return v
 }
 
-// This functions is for multi-party (3 or more parties) FSS
+// This function is for multi-party (3 or more parties) FSS
 // for equality functions
 // The API interface is similar to the 2 party version.
 // One main difference is the output of the evaluation function
