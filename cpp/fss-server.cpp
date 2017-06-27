@@ -7,7 +7,10 @@ void initializeServer(Fss* f, AES_KEY* aes_keys, uint32_t numBits) {
     memcpy(f->aes_keys, aes_keys, sizeof(AES_KEY)*initPRFLen);
     f->m = 4;
     f->numBits = numBits;
+    f->numParties = 3;
 }
+
+// evaluate whether x satisifies value in function stored in key k
 
 mpz_class evaluateEq(Fss* f, ServerKeyEq *k, uint64_t x) {
 
@@ -60,6 +63,8 @@ mpz_class evaluateEq(Fss* f, ServerKeyEq *k, uint64_t x) {
     ans = ans % f->prime;
     return ans;
 }
+
+// Evaluate whether x < value in function stored in key k
 
 uint64_t evaluateLt(Fss* f, ServerKeyLt *k, uint64_t x) {
 

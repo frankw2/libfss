@@ -18,6 +18,12 @@ $(LIB): fss-client.o fss-server.o fss-common.o
 	$(CC) $(CFLAGS) $< -c -o $@
 
 .PHONY: clean
-
 clean:
 	rm -f *.o $(LIB) $(OBJECTS) $(EXECUTABLE)
+
+.PHONY: install
+install: 
+	mkdir -p $(DESTDIR)$(PREFIX)/lib
+	mkdir -p $(DESTDIR)$(PREFIX)/include
+	cp $(alib) $(DESTDIR)$(PREFIX)/lib/$(alib)
+	cp *.h $(DESTDIR)$(PREFIX)/include/

@@ -1,4 +1,4 @@
-// This is the client side code that does the evaluation
+// This is the client side code that does the key generation
 #include "fss-client.h"
 
 void initializeClient(Fss* f, uint32_t numBits) {
@@ -23,12 +23,16 @@ void initializeClient(Fss* f, uint32_t numBits) {
             AES_set_encrypt_key(rand_bytes, 128, &(f->aes_keys[i]));
         }
     }
+
+    f->numParties = 3;
     f->m = 4;
     // We need prime for the point funciton of FSS, but the new point function FSS does not need this
     mpz_class p;
     mpz_ui_pow_ui(p.get_mpz_t(), 2, 32);
     mpz_nextprime(f->prime.get_mpz_t(), p.get_mpz_t());
 }
+
+// Generate keys for 2 party equality FSS
 
 void generateTreeEq(Fss* f, ServerKeyEq* k0, ServerKeyEq* k1, uint64_t a_i, uint64_t b_i){
     uint32_t n = f->numBits;
@@ -238,6 +242,8 @@ void generateTreeEq(Fss* f, ServerKeyEq* k0, ServerKeyEq* k1, uint64_t a_i, uint
         k1->w = 0;
     }
 }
+
+// Generate keys for 2 party less than FSS 
 
 void generateTreeLt(Fss* f, ServerKeyLt* k0, ServerKeyLt* k1, uint64_t a_i, uint64_t b_i){
 
@@ -482,3 +488,5 @@ void generateTreeLt(Fss* f, ServerKeyLt* k0, ServerKeyLt* k1, uint64_t a_i, uint
     }
 
 }
+
+

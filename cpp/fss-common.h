@@ -24,6 +24,7 @@ struct Fss {
     uint32_t m; // used only in multiparty. Default is 4
     uint32_t numBits; // number of bits in domain 
     mpz_class prime;
+    uint32_t numParties; // used only in multiparty. Default is 3
 };
 
 struct CWEq {
@@ -49,6 +50,18 @@ struct ServerKeyLt {
     unsigned char t[2];
     uint64_t v[2];
     CWLt* cw[2];
+};
+
+struct MPLtKey {
+    unsigned char*** s;
+    uint32_t** aValue;
+    uint32_t** cw;
+    uint32_t* wVal;
+};
+
+struct MPKey {
+    unsigned char** sigma;
+    uint32_t** cw;
 };
 
 // Assumes integers are 64 bits
