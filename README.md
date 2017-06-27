@@ -19,8 +19,10 @@ Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zah
 For Go, doing a `go install` on the test_fss/ folder will create the test program. 
 
 For C++, do the following:
-`./configure
-make`
+
+`./configure`
+
+`make`
 
 If you want to install the libfss.a library, you can perform a
 
