@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include <string>
 
+using namespace std;
+
 const int initPRFLen = 4;
 
 struct Fss {
