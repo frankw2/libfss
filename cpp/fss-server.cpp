@@ -61,3 +61,43 @@ mpz_class evaluateEq(Fss* f, ServerKeyEq *k, uint64_t x) {
     return ans;
 }
 
+uint64_t evaluateLt(Fss* f, ServerKeyLt *k, uint64_t x) {
+
+    uint32_t n = f->numBits;
+
+    int xi = getBit(x, (64-n+1));
+    unsigned char s[16];
+    memcpy(s, k->s[xi], 16);
+    unsigned char t = k->t[xi];
+    uint64_t v = k->v[xi];
+    unsigned char pt []= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
+    unsigned char sArray[32];
+    unsigned char temp[2];
+    unsigned char out[64];
+    uint64_t temp_v;
+    for (uint32_t i = 1; i < n; i++) {
+        xi = getBit(x, (64-n+i+1));
+        prf(out, s, pt, 64, f->aes_keys);
+        memcpy(sArray, out, 32);
+        temp[0] = out[32] % 2;
+        temp[1] = out[33] % 2;
+
+        temp_v = byteArr2Int64((unsigned char*) (out + 40 + (8*xi)));
+        int xStart = 16 * xi;
+        memcpy(s, (unsigned char*) (sArray + xStart), 16);
+        for (uint32_t j = 0; j < 16; j++) {
+            s[j] = s[j] ^ k->cw[t][i-1].cs[xi][j];
+        }
+        //printf("%d: t: %d %d, ct: %d, bit: %d\n", i, temp[0], temp[1], k->cw[t][i-1].ct[xi], xi);
+        //printf("temp_v: %lld\n", temp_v);
+        v = (v + temp_v);
+        v = (v + k->cw[t][i-1].cv[xi]);
+        t = temp[xi] ^ k->cw[t][i-1].ct[xi];
+    }
+    
+    return v;
+}

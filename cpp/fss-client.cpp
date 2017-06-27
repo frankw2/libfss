@@ -238,3 +238,247 @@ void generateTreeEq(Fss* f, ServerKeyEq* k0, ServerKeyEq* k1, uint64_t a_i, uint
         k1->w = 0;
     }
 }
+
+void generateTreeLt(Fss* f, ServerKeyLt* k0, ServerKeyLt* k1, uint64_t a_i, uint64_t b_i){
+
+    uint32_t n = f->numBits;
+
+    // Set up num_bits and allocate memory
+    k0->cw[0] = (CWLt*) malloc(sizeof(CWLt) * (n-1));
+    k0->cw[1] = (CWLt*) malloc(sizeof(CWLt) * (n-1));
+    k1->cw[0] = (CWLt*) malloc(sizeof(CWLt) * (n-1));
+    k1->cw[1] = (CWLt*) malloc(sizeof(CWLt) * (n-1));
+
+    // Figure out first relevant bit
+    // n is the number of least significant bits to compare
+    int a = getBit(a_i, (64-n+1));
+    int na = a ^ 1;
+
+    // create arrays size (AES_key_size*2 + 2)
+    unsigned char s0[32];
+    unsigned char s1[32];
+    int aStart = 16 * a;
+    int naStart = 16 *na;
+
+    // Set initial seeds for PRF
+    if(!RAND_bytes((unsigned char*) (s0 + aStart), 16)) {
+        printf("Random bytes failed\n");
+        exit(1);
+    }
+    if (!RAND_bytes((unsigned char*) (s1 + aStart), 16)) {
+        printf("Random bytes failed\n");
+        exit(1);
+    }
+    if (!RAND_bytes((unsigned char*) (s0 + naStart), 16)) {
+        printf("Random bytes failed\n");
+        exit(1);
+    }
+    memcpy((unsigned char*)(s1 + naStart), (unsigned char*)(s0 + naStart), 16);
+
+    unsigned char t0[2];
+    unsigned char t1[2];
+    unsigned char temp[2];
+    if (!RAND_bytes((unsigned char*) temp, 2)) {
+        printf("Random bytes failed\n");
+        exit(1);
+    }
+
+    // Figure out initial ts
+    // Make sure t0a and t1a are different
+    t0[a] = temp[0] % 2;
+    t1[a] = (t0[a] + 1) % 2;
+
+    // Make sure t0na = t1na
+    t0[na] = temp[1] % 2;
+    t1[na] = t0[na];
+
+    // Set initial v's
+    unsigned char temp_v[8];
+    if (!RAND_bytes(temp_v, 8)) {
+        printf("Random bytes failed.\n");
+        exit(1);
+    }
+    k0->v[a] = byteArr2Int64(temp_v);
+    k1->v[a] = k0->v[a];
+
+    if (!RAND_bytes(temp_v, 8)) {
+        printf("Random bytes failed.\n");
+        exit(1);
+    }
+    k0->v[na] = byteArr2Int64(temp_v);
+    k1->v[na] = k0->v[na] - b_i*a;
+
+    memcpy(k0->s[0], s0, 16);
+    memcpy(k0->s[1], (unsigned char*)(s0 + 16), 16);
+    memcpy(k1->s[0], s1, 16);
+    memcpy(k1->s[1], (unsigned char*) (s1 + 16), 16);
+    k0->t[0] = t0[0];
+    k0->t[1] = t0[1];
+    k1->t[0] = t1[0];
+    k1->t[1] = t1[1];
+
+    // Pick right keys to put into cipher
+    unsigned char key0[16];
+    unsigned char key1[16];
+    memcpy(key0, (unsigned char*) (s0 + aStart), 16);
+    memcpy(key1, (unsigned char*) (s1 + aStart), 16);
+
+    unsigned char tbit0 = t0[a];
+    unsigned char tbit1 = t1[a];
+
+    unsigned char pt []= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
+    unsigned char cs0[32];
+    unsigned char cs1[32];
+    unsigned char ct0[2];
+    unsigned char ct1[2];
+    unsigned char out0[64];
+    unsigned char out1[64];
+
+    uint64_t v0[2];
+    uint64_t v1[2];
+    uint64_t cv[2][2];
+    uint64_t v;
+    for (uint32_t i = 0; i < n-1; i++) {
+        //printf("s: ");
+        //printByteArray(key0, 16);
+        prf(out0, key0, pt, 64, f->aes_keys);
+        prf(out1, key1, pt, 64, f->aes_keys);
+
+        memcpy(s0, out0, 32);
+        memcpy(s1, out1, 32);
+        t0[0] = out0[32] % 2;
+        t0[1] = out0[33] % 2;
+        t1[0] = out1[32] % 2;
+        t1[1] = out1[33] % 2;
+
+        v0[0] = byteArr2Int64((unsigned char*) (out0 + 40));
+        v0[1] = byteArr2Int64((unsigned char*) (out0 + 48));
+        v1[0] = byteArr2Int64((unsigned char*) (out1 + 40));
+        v1[1] = byteArr2Int64((unsigned char*) (out1 + 48));
+        //printf("out0: %d %d\n", out0[32], out0[33]);
+
+        // Reset a and na bits
+        a = getBit(a_i, (64-n+i+2));
+        na = a ^ 1;
+
+        // Redefine aStart and naStart based on new a's
+        aStart = 16 * a;
+        naStart = 16 * na;
+
+        // Create cs and ct for next bit
+        if (!RAND_bytes((unsigned char*) (cs0 + aStart), 16)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+        if (!RAND_bytes((unsigned char*) (cs1 + aStart), 16)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+        if (!RAND_bytes((unsigned char*) (cs0 + naStart), 16)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+
+        for (uint32_t j = 0; j < 16; j++) {
+            cs1[naStart+j] = s0[naStart+j] ^ s1[naStart+j] ^ cs0[naStart+j];
+        }
+
+        if (!RAND_bytes(temp, 2)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+
+        ct0[a] = temp[0] % 2;
+        ct1[a] = ct0[a] ^ t0[a] ^ t1[a] ^ 1;
+
+        ct0[na] = temp[1] % 2;
+        ct1[na] = ct0[na] ^ t0[na] ^ t1[na];
+
+        if (!RAND_bytes(temp_v, 8)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+
+        cv[tbit0][a] = byteArr2Int64(temp_v);
+        v = (cv[tbit0][a] + v0[a]);
+
+
+        v = (v - v1[a]);
+        cv[tbit1][a] = v;
+        if (!RAND_bytes(temp_v, 8)) {
+            printf("Random bytes failed.\n");
+            exit(1);
+        }
+
+        cv[tbit0][na] = byteArr2Int64(temp_v);
+        v = (cv[tbit0][na] + v0[na]);
+
+        v = (v - v1[na]);
+        cv[tbit1][na] = (v - b_i*a);
+
+        // Copy appropriate values into key
+        memcpy(k0->cw[0][i].cs[0], cs0, 16);
+        memcpy(k0->cw[0][i].cs[1], (unsigned char*) (cs0 + 16), 16);
+        k0->cw[0][i].ct[0] = ct0[0];
+        k0->cw[0][i].ct[1] = ct0[1];
+        memcpy(k0->cw[1][i].cs[0], cs1, 16);
+        memcpy(k0->cw[1][i].cs[1], (unsigned char*) (cs1 + 16), 16);
+        k0->cw[1][i].ct[0] = ct1[0];
+        k0->cw[1][i].ct[1] = ct1[1];
+
+        k0->cw[0][i].cv[0] = cv[0][0];
+        k0->cw[0][i].cv[1] = cv[0][1];
+        k0->cw[1][i].cv[0] = cv[1][0];
+        k0->cw[1][i].cv[1] = cv[1][1];
+
+        memcpy(k1->cw[0][i].cs[0], cs0, 16);
+        memcpy(k1->cw[0][i].cs[1], (unsigned char*) (cs0 + 16), 16);
+        k1->cw[0][i].ct[0] = ct0[0];
+        k1->cw[0][i].ct[1] = ct0[1];
+        memcpy(k1->cw[1][i].cs[0], cs1, 16);
+        memcpy(k1->cw[1][i].cs[1], (unsigned char*) (cs1 + 16), 16);
+        k1->cw[1][i].ct[0] = ct1[0];
+        k1->cw[1][i].ct[1] = ct1[1];
+
+        k1->cw[0][i].cv[0] = cv[0][0];
+        k1->cw[0][i].cv[1] = cv[0][1];
+        k1->cw[1][i].cv[0] = cv[1][0];
+        k1->cw[1][i].cv[1] = cv[1][1];
+
+        unsigned char* cs;
+        unsigned char* ct;
+
+        if (tbit0 == 1) {
+            cs = cs1;
+            ct = ct1;
+        } else {
+            cs = cs0;
+            ct = ct0;
+        }
+        for (uint32_t j = 0; j < 16; j++) {
+            key0[j] = s0[aStart+j] ^ cs[aStart+j];
+        }
+        tbit0 = t0[a] ^ ct[a];
+
+        //printf("After XOR: ");
+        //printByteArray(key0, 16);
+        if (tbit1 == 1) {
+            cs = cs1;
+            ct = ct1;
+        } else {
+            cs = cs0;
+            ct = ct0;
+
+        }
+
+        for (uint32_t j = 0; j < 16; j++) {
+            key1[j] = s1[aStart+j] ^ cs[aStart+j];
+        }
+        tbit1 = t1[a] ^ ct[a];
+    }
+
+}

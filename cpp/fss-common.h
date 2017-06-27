@@ -61,6 +61,16 @@ inline int getBit(uint64_t n, uint64_t pos) {
     }
 }
 
+// Converts byte array into 64-bit integer
+inline uint64_t byteArr2Int64(unsigned char* arr)
+{
+    uint64_t i = ((unsigned long) arr[7] << 56) | ((unsigned long)arr[6] << 48) | ((unsigned long)arr[5] << 40) |
+                ((unsigned long) arr[4] << 32) | ((unsigned long) arr[3] << 24) |
+                ((unsigned long) arr[2] << 16) | ((unsigned long) arr[1] << 8) | ((unsigned long) arr[0]);
+    return i;
+}
+
+
 void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size, AES_KEY* aes_keys);
 
 #endif

@@ -12,4 +12,7 @@ void initializeClient(Fss* f, uint32_t numBits);
 // Creates keys for a function that evaluates to b when input x = a.
 void generateTreeEq(Fss* f, ServerKeyEq* k0, ServerKeyEq* k1, uint64_t a_i, uint64_t b_i);
 
+// Creates keys for a function that evalutes to b when input x < a.
+void generateTreeLt(Fss* f, ServerKeyLt* k0, ServerKeyLt* k1, uint64_t a_i, uint64_t b_i);
+
 #endif
