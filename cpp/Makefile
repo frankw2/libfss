@@ -9,13 +9,15 @@ LIB=libfss.a
 all: $(SOURCES) $(EXECUTABLE) $(LIB)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(LIB): fss-client.o fss-server.o fss-common.o
-	ar rcs $@ fss-client.o fss-server.o fss-common.o
+	ar rcs $@ $^
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -c -o $@
 
+.PHONY: clean
+
 clean:
-	rm -f fss-test *.o libfss.a
+	rm -f *.o $(LIB) $(OBJECTS) $(EXECUTABLE)
