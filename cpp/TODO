@@ -1,0 +1,11 @@
+To dos (in some priority order):
+
+- For C++ library, use new Equality FSS protocol for 2 party from the following paper:
+
+Boyle, Elette, Niv Gilboa, and Yuval Ishai. "Function Secret Sharing: Improvements and Extensions." Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security. ACM, 2016.
+
+- RPC functions for client-server interaction. Right now, you have to do your own RPCs 
+
+- Better portability using autotools for C++ library
+
+- Rust version of FSS?

@@ -1,8 +1,10 @@
 # Function Secret Sharing (FSS) Library
 
-This is a function secret sharing (FSS) library for Go. A C++ version (used in the paper) will be released soon!
+This is a function secret sharing (FSS) library for Go and C++. 
 
-To get a sense on how to use the library, please look at the example programs in the test_fss/ folder.
+To get a sense on how to use the library for Go, look in the test_fss/ folder. For C++, look at the fss-test.cpp file. 
+
+For the Go and C++ libraries, the code is split into server, client, and common code.
 
 This library is based the following papers:
 
@@ -14,7 +16,6 @@ This implementation uses the techniques described in:
 
 Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zaharia. "[Splinter: Practical Private Queries on Public Data.](https://frankwang.org/papers/wang-splinter.pdf)" NSDI 2017.
 
-We created a Go library for portability reasons. The main FSS files are in libfss/. Doing a go install on the test/ folder will create the test programs. 
+For Go, doing a `go install` on the test_fss/ folder will create the test program. 
 
 For any questions, feel free to create an issue, submit a pull request, or email Frank Wang at frankw@mit.edu.
-
