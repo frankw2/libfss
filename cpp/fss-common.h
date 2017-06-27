@@ -83,7 +83,16 @@ inline uint64_t byteArr2Int64(unsigned char* arr)
     return i;
 }
 
+// Converts byte array into 32-bit integer
+inline uint32_t byteArr2Int32(unsigned char* arr)
+{
+    uint32_t a = uint32_t((unsigned char)(arr[0]) << 24 |
+            (unsigned char)(arr[1]) << 16 |
+            (unsigned char)(arr[2]) << 8 |
+            (unsigned char)(arr[3]));
+    return a;
+}
 
-void prf(unsigned char* out, unsigned char* key, unsigned char* in, uint64_t in_size, AES_KEY* aes_keys);
+AES_KEY* prf(unsigned char* out, unsigned char* key, uint64_t in_size, AES_KEY* aes_keys);
 
 #endif
