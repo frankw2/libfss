@@ -21,10 +21,10 @@ const int initPRFLen = 4;
 struct Fss {
     // store keys in fixedBlocks
     AES_KEY* aes_keys;
-    uint32_t m; // used only in multiparty. Default is 4
     uint32_t numBits; // number of bits in domain 
     mpz_class prime;
     uint32_t numParties; // used only in multiparty. Default is 3
+    uint32_t numKeys;
 };
 
 struct CWEq {
@@ -93,6 +93,6 @@ inline uint32_t byteArr2Int32(unsigned char* arr)
     return a;
 }
 
-AES_KEY* prf(unsigned char* out, unsigned char* key, uint64_t in_size, AES_KEY* aes_keys);
+AES_KEY* prf(unsigned char* out, unsigned char* key, uint64_t in_size, AES_KEY* aes_keys, uint32_t numKeys);
 
 #endif
