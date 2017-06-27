@@ -17,6 +17,7 @@ This implementation uses the techniques described in:
 Frank Wang, Catherine Yun, Shafi Goldwasser, Vinod Vaikuntanathan, and Matei Zaharia. "[Splinter: Practical Private Queries on Public Data.](https://frankwang.org/papers/wang-splinter.pdf)" NSDI 2017.
 
 For Go, doing a `go install` on the test_fss/ folder will create the test program. 
+
 For C++, do the following:
 `./configure
 make`
