@@ -1,8 +1,6 @@
 # Function Secret Sharing (FSS) Library
 
-This is a function secret sharing (FSS) library for Go and C++. 
-
-To get a sense on how to use the library for Go, look in the test_fss/ folder. For C++, look at the fss-test.cpp file. 
+This is a function secret sharing (FSS) library for Go and C++. To get a sense on how to use the library for Go, look in the test_fss/ folder. For C++, look at the fss-test.cpp file. 
 
 For the Go and C++ libraries, the code is split into server, client, and common code.
 
