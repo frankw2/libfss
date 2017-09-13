@@ -1,6 +1,6 @@
 package libfss
 
-// This file contains all the server code for the FSS scheme.
+// This file contains all the client code for the FSS scheme.
 
 import (
 	"crypto/aes"

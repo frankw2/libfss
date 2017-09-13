@@ -1,6 +1,6 @@
 package libfss
 
-// This file contains the client side code for the FSS library.
+// This file contains the server side code for the FSS library.
 
 import (
 	"crypto/aes"
