@@ -61,7 +61,7 @@ func randomCryptoInt() uint {
 // True if bit is 1 and False if bit is 0
 // N is the number of bits in uint
 func getBit(n, pos, N uint) byte {
-	val := (n & (1 << (N - pos)))
+	val := (n & (1 << (N - pos + 1)))
 	if val > 0 {
 		return 1
 	} else {
