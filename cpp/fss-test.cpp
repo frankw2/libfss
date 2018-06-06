@@ -26,8 +26,8 @@ int main()
     fin = ans0 - ans1;
     cout << "FSS Eq Match (should be non-zero): " << fin << endl;
     
-    ans0 = evaluateEq(&fServer, &k0, (a+1));
-    ans1 = evaluateEq(&fServer, &k1, (a+1));
+    ans0 = evaluateEq(&fServer, &k0, (a-1));
+    ans1 = evaluateEq(&fServer, &k1, (a-1));
     fin = ans0 - ans1;
     cout << "FSS Eq No Match (should be 0): " << fin << endl;
 
