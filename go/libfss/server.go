@@ -55,6 +55,12 @@ func (f Fss) EvaluatePF(serverNum byte, k FssKeyEq2P, x uint) int {
 	copy(sCurr, k.SInit)
 	tCurr := k.TInit
 	for i := uint(0); i < f.NumBits; i++ {
+		if i != f.N {
+			xBit := getBit(x, (f.N - f.NumBits + i + 1), f.N)
+		} else {
+			xBit := 0
+		}
+
 		prf(sCurr, f.FixedBlocks, 3, f.Temp, f.Out)
 		//fmt.Println(i, sCurr)
 		//fmt.Println(i, "f.Out:", f.Out)
@@ -70,7 +76,6 @@ func (f Fss) EvaluatePF(serverNum byte, k FssKeyEq2P, x uint) int {
 			f.Out[j] = f.Out[j] ^ (tCurr * k.CW[i][count])
 			count++
 		}
-		xBit := getBit(x, (f.N - f.NumBits + i + 1), f.N)
 		//fmt.Println("xBit", xBit)
 		// Pick right seed expansion based on
 		if xBit == 0 {
@@ -100,8 +105,11 @@ func (f Fss) EvaluateLt(k ServerKeyLt, x uint) uint {
 	v := k.v[xBit]
 	for i := uint(1); i < f.NumBits; i++ {
 		// Get current bit
-		xBit = getBit(x, uint(f.N-f.NumBits+i+1), f.N)
-
+		if i != f.N {
+			xBit = getBit(x, uint(f.N-f.NumBits+i+1), f.N)
+		} else {
+			xBit = 0
+		}
 		prf(s, f.FixedBlocks, 4, f.Temp, f.Out)
 
 		// Pick the right values to use based on bit of x
