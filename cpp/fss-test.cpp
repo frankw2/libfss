@@ -78,6 +78,9 @@ int main()
     for(size_t i=0; i<rounds; i++) {
         volatile auto x = evaluateLt(&fServer, &lt_k0, i);
     }
+    for(size_t i=0; i<rounds; i++) {
+        volatile auto x = evaluateEqMParty(&fServer, &mp_keys[1], a);
+    }
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "Benchmark result: " <<
      std::chrono::duration<double, std::milli>(t_end - t_begin).count()
