@@ -2,11 +2,13 @@
 #include "fss-client.h"
 
 void initializeClient(Fss* f, uint32_t numBits, uint32_t numParties) {
+#ifndef AESNI
     // check if there is aes-ni instruction
     uint32_t eax, ebx, ecx, edx;
 
     eax = ebx = ecx = edx = 0;
     __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+#endif
 
     f->numBits = numBits;
 
@@ -17,11 +19,15 @@ void initializeClient(Fss* f, uint32_t numBits, uint32_t numParties) {
         if (!RAND_bytes(rand_bytes, 16)) {
             printf("Random bytes failed.\n");
         }
+#ifndef AESNI
         if ((ecx & bit_AES) > 0) {
             aesni_set_encrypt_key(rand_bytes, 128, &(f->aes_keys[i]));
         } else {
             AES_set_encrypt_key(rand_bytes, 128, &(f->aes_keys[i]));
         }
+#else
+        aesni_set_encrypt_key(rand_bytes, 128, &(f->aes_keys[i]));
+#endif
     }
 
     f->numParties = numParties;
