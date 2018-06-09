@@ -1,12 +1,13 @@
 #include "fss-common.h"
 
 AES_KEY* prf(unsigned char* out, unsigned char* key, uint64_t in_size, AES_KEY* aes_keys, uint32_t numKeys) {
-
+#ifndef AESNI
     // check if there is aes-ni instruction
     uint32_t eax, ebx, ecx, edx;
 
     eax = ebx = ecx = edx = 0;
     __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+#endif
     
     AES_KEY* temp_keys = aes_keys;
     // Do Matyas–Meyer–Oseas one-way compression function using different AES keys to get desired
@@ -20,19 +21,27 @@ AES_KEY* prf(unsigned char* out, unsigned char* key, uint64_t in_size, AES_KEY* 
             if (!RAND_bytes(rand_bytes, 16)) {
                 printf("Random bytes failed.\n");
             }
+#ifndef AESNI
             if ((ecx & bit_AES) > 0) {
                 aesni_set_encrypt_key(rand_bytes, 128, &(temp_keys[i]));
             } else {
                 AES_set_encrypt_key(rand_bytes, 128, &(temp_keys[i]));
             }
+#else
+            aesni_set_encrypt_key(rand_bytes, 128, &(temp_keys[i]));
+#endif
         }
     }
     for (int i = 0; i < num_keys_required; i++) {
+#ifndef AESNI
         if ((ecx & bit_AES) > 0) {
             aesni_encrypt(key, out + (i*16), &temp_keys[i]);
         } else {
             AES_encrypt(key, out + (i*16), &temp_keys[i]);
         }
+#else
+        aesni_encrypt(key, out + (i*16), &temp_keys[i]);
+#endif
     }
     for (int i = 0; i < in_size; i++) {
         out[i] = out[i] ^ key[i%16];
