@@ -55,10 +55,9 @@ func (f Fss) EvaluatePF(serverNum byte, k FssKeyEq2P, x uint) int {
 	copy(sCurr, k.SInit)
 	tCurr := k.TInit
 	for i := uint(0); i < f.NumBits; i++ {
+        var xBit byte = 0
 		if i != f.N {
-			xBit := getBit(x, (f.N - f.NumBits + i + 1), f.N)
-		} else {
-			xBit := 0
+			xBit = byte(getBit(x, (f.N - f.NumBits + i + 1), f.N))
 		}
 
 		prf(sCurr, f.FixedBlocks, 3, f.Temp, f.Out)
