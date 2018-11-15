@@ -61,7 +61,7 @@ func randomCryptoInt() uint {
 // True if bit is 1 and False if bit is 0
 // N is the number of bits in uint
 func getBit(n, pos, N uint) byte {
-	return (n & (1 << (N - pos))) >> (N - pos)
+	return byte((n & (1 << (N - pos))) >> (N - pos))
 }
 
 // fixed key PRF (Matyas–Meyer–Oseas one way compression function)
